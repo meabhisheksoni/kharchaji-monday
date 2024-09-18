@@ -1,32 +1,44 @@
+
 package com.example.kharchaji
 
-//TodoViewModel.kt
-
-
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
-data class TodoItem(val text: String, var isDone: Boolean = false)
-
-class TodoViewModel : ViewModel() {
+class TodoViewModel(application: Application) : AndroidViewModel(application) {
+    private val repository: TodoRepository
     private val _todoItems = MutableStateFlow<List<TodoItem>>(emptyList())
     val todoItems: StateFlow<List<TodoItem>> = _todoItems
 
-    fun addItem(item: TodoItem) {
-        _todoItems.value = listOf(item) + _todoItems.value  // Add new item at the beginning
-    }
-
-    fun updateItem(updatedItem: TodoItem) {
-        _todoItems.value = _todoItems.value.map {
-            if (it.text == updatedItem.text) updatedItem else it
+    init {
+        val todoDao = AppDatabase.getDatabase(application).todoDao()
+        repository = TodoRepository(todoDao)
+        viewModelScope.launch {
+            repository.getTodoItems().collectLatest { items ->
+                _todoItems.value = items
+            }
         }
     }
 
-    fun removeItem(item: TodoItem) {
-        _todoItems.value = _todoItems.value - item
+    fun addItem(item: TodoItem) = viewModelScope.launch {
+        repository.insert(item)
     }
-    fun setAllItemsChecked(checked: Boolean) {
-        _todoItems.value = _todoItems.value.map { it.copy(isDone = checked) }
+
+    fun updateItem(updatedItem: TodoItem) = viewModelScope.launch {
+        repository.update(updatedItem)
+    }
+
+    fun removeItem(item: TodoItem) = viewModelScope.launch {
+        repository.delete(item)
+    }
+
+    fun setAllItemsChecked(checked: Boolean) = viewModelScope.launch {
+        val currentItems = _todoItems.value
+        val updatedItems = currentItems.map { it.copy(isDone = checked) }
+        updatedItems.forEach { repository.update(it) }
     }
 }

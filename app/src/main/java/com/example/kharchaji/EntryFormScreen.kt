@@ -41,7 +41,7 @@ import androidx.compose.ui.unit.sp
 fun MainScreen(todoViewModel: TodoViewModel, onShareClick: () -> Unit) {
     var showListScreen by remember { mutableStateOf(false) }
 
-    val todoItems by todoViewModel.todoItems.collectAsState()
+    val todoItems by todoViewModel.todoItems.collectAsState(initial = emptyList())
     val totalItems = todoItems.size
     val checkedItems = todoItems.count { it.isDone }
     val totalSum = todoItems.sumOf { parsePrice(it.text) }

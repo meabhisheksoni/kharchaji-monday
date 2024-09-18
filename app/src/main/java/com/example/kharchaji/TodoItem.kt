@@ -1,5 +1,13 @@
-package com.example.todolist
+package com.example.kharchaji
 
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 
-data class TodoItem(val text: String, var isDone: Boolean = false)
+@Entity(tableName = "todo_table")
+data class TodoItem(
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val text: String,
+    val isDone: Boolean = false
+)
+
 

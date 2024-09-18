@@ -108,9 +108,18 @@ fun ExpensesList(todoItems: List<TodoItem>, totalSum: Double) {
 @Composable
 fun PreviewExpensesList() {
     val sampleItems = listOf(
-        TodoItem("Item 1 (1kg) - Rs 100", isDone = true),
-        TodoItem("Item 2 (500g) - Rs 50", isDone = false),
-        TodoItem("Item 3 - Rs 200", isDone = true)
+        TodoItem(
+            text = "Item 1 (1kg) - Rs 100",
+            isDone = true
+        ),
+        TodoItem(
+            text = "Item 2 (500g) - Rs 50",
+            isDone = false
+        ),
+        TodoItem(
+            text = "Item 3 - Rs 200",
+            isDone = true
+        )
     )
     val totalSum = 350.0
     ExpensesList(todoItems = sampleItems, totalSum = totalSum)

@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import com.example.kharchaji.TodoItem
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.BorderStroke
@@ -81,8 +82,8 @@ fun TodoApp(todoViewModel: TodoViewModel = viewModel()) {
 
     if (showShareScreen) {
         ShareScreen(
-            todoItems = todoViewModel.todoItems.collectAsState().value,
-            totalSum = todoViewModel.todoItems.collectAsState().value.sumOf { parsePrice(it.text) },
+            todoItems = todoViewModel.todoItems.collectAsState(initial = emptyList()).value,
+            totalSum = todoViewModel.todoItems.collectAsState(initial = emptyList()).value.sumOf { parsePrice(it.text) },
             onDismiss = { showShareScreen = false }
         )
     } else {
