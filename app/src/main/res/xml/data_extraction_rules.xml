@@ -5,11 +5,12 @@
 -->
 <data-extraction-rules>
     <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
+        <!-- Future mein preferences aur important files ka backup ke liye -->
+        <include domain="sharedpref" path="user_settings" />
+        <!-- Temporary files ko backup mein na rakhne ke liye -->
+        <exclude domain="file" path="cache" />
     </cloud-backup>
+
     <!--
     <device-transfer>
         <include .../>
