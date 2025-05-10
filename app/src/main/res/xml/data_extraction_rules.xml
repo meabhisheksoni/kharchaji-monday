@@ -6,7 +6,8 @@
 <data-extraction-rules>
     <cloud-backup>
         <!-- Future mein preferences aur important files ka backup ke liye -->
-        <include domain="sharedpref" path="user_settings" />
+        <include domain="sharedpref" path="." />
+        <include domain="file" path="." />
         <!-- Temporary files ko backup mein na rakhne ke liye -->
         <exclude domain="file" path="cache" />
     </cloud-backup>
