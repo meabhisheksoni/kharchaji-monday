@@ -857,6 +857,7 @@ fun EditExpenseDialog(
 fun ExpenseListScreen(todoViewModel: TodoViewModel, onShareClick: () -> Unit) {
     var showListScreen by remember { mutableStateOf(false) }
     var editingItem by remember { mutableStateOf<TodoItem?>(null) }
+    var showDeleteAllDialog by remember { mutableStateOf(false) }
 
     val todoItems by todoViewModel.todoItems.collectAsState(initial = emptyList())
     val totalItems = todoItems.size
@@ -991,24 +992,60 @@ fun ExpenseListScreen(todoViewModel: TodoViewModel, onShareClick: () -> Unit) {
                     }
                 }
 
-                // Master Checkbox
+                // Master Checkbox and Delete All Button
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Checkbox(
-                        checked = masterCheckboxState,
-                        onCheckedChange = { checked ->
-                            masterCheckboxState = checked
-                            todoViewModel.setAllItemsChecked(checked)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(
+                            checked = masterCheckboxState,
+                            onCheckedChange = { checked ->
+                                masterCheckboxState = checked
+                                todoViewModel.setAllItemsChecked(checked)
+                            }
+                        )
+                        Text(
+                            text = "Select All",
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(start = 8.dp)
+                        )
+                    }
+
+                    if (todoItems.isNotEmpty()) {
+                        IconButton(
+                            onClick = { showDeleteAllDialog = true },
+                            colors = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                        ) {
+                            Icon(Icons.Filled.Delete, contentDescription = "Delete All Expenses")
                         }
-                    )
-                    Text(
-                        text = "Select All",
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(start = 8.dp)
+                    }
+                }
+
+                // Confirmation Dialog for Delete All
+                if (showDeleteAllDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showDeleteAllDialog = false },
+                        title = { Text("Delete All Expenses?") },
+                        text = { Text("Are you sure you want to delete all expenses? This action cannot be undone.") },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    todoViewModel.deleteAllItems()
+                                    showDeleteAllDialog = false
+                                }
+                            ) {
+                                Text("Delete All")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showDeleteAllDialog = false }) {
+                                Text("Cancel")
+                            }
+                        }
                     )
                 }
 

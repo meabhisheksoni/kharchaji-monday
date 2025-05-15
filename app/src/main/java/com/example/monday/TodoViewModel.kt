@@ -40,4 +40,8 @@ class TodoViewModel(application: Application) : AndroidViewModel(application) {
         val updatedItems = currentItems.map { it.copy(isDone = checked) }
         updatedItems.forEach { repository.update(it) }
     }
+
+    fun deleteAllItems() = viewModelScope.launch {
+        repository.deleteAll()
+    }
 }
