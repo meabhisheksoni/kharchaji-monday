@@ -333,19 +333,47 @@ fun TodoItemRow(
                     if (itemDisplayCategories.isNotEmpty()) {
                         Row(
                             modifier = Modifier
-                                .padding(bottom = 4.dp), // Space between icons and item name
+                                .padding(bottom = 2.dp), // Space between icons and item name
                             horizontalArrangement = Arrangement.Start
                         ) {
-                            itemDisplayCategories.forEach { category ->
-                                Icon(
-                                    imageVector = category.icon,
-                                    contentDescription = category.name,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier
-                                        .size(18.dp) // Small icons
-                                        .padding(end = 4.dp) // Space between icons
-                                )
+                            Box(
+                                modifier = Modifier
+                                    .offset(y = 0.dp, x = 0.dp)
+                                    .border(
+                                        width = 0.5.dp,
+                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                                        shape = RoundedCornerShape(4.dp)
+                                    )
+                                    .background(
+                                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
+                                        shape = RoundedCornerShape(4.dp)
+                                    )
+                                    .padding(horizontal = 2.dp, vertical = 1.dp)
+                            ) {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(1.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    itemDisplayCategories.take(3).forEach { category ->
+                                        Icon(
+                                            imageVector = category.icon,
+                                            contentDescription = category.name,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(10.dp)
+                                        )
+                                    }
+                                    
+                                    if (itemDisplayCategories.size > 3) {
+                                        Text(
+                                            text = "+${itemDisplayCategories.size - 3}",
+                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 7.sp),
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
                             }
+                            
+                            Spacer(modifier = Modifier.width(4.dp))
                         }
                     }
 
