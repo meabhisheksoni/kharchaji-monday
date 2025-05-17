@@ -1,13 +1,20 @@
 package com.example.monday
 
 fun parsePrice(text: String): Double {
-    val priceString = text.split(" - ").lastOrNull()?.replace("₹", "")?.trim() ?: return 0.0
+    // First, remove any category metadata
+    val cleanedText = text.split("|CATS:").first()
+    
+    // Extract price from the clean text
+    val priceString = cleanedText.split(" - ₹").lastOrNull()?.trim() ?: return 0.0
     return priceString.toDoubleOrNull() ?: 0.0
 }
 
 fun parseItemText(text: String): Triple<String, String?, String> {
-    val parts = text.split(" - ")
-    if (parts.size < 2) return Triple(text, null, "0.0")
+    // First, remove any category metadata
+    val cleanedText = text.split("|CATS:").first()
+    
+    val parts = cleanedText.split(" - ")
+    if (parts.size < 2) return Triple(cleanedText, null, "0.0")
     
     val nameAndQuantity = parts[0]
     val price = parts[1].replace("₹", "").trim()
