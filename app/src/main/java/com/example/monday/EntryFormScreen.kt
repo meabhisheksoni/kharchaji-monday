@@ -340,23 +340,83 @@ fun TodoItemRow(
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // CATEGORY INDICATOR - VERY VISIBLE
+                // Replace red indicator with actual category icons
                 if (categoryNames.isNotEmpty()) {
-                    Surface(
-                        modifier = Modifier.size(32.dp),
-                        shape = CircleShape,
-                        color = Color.Red
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(end = 8.dp)
                     ) {
-                        Text(
-                            text = "${categoryNames.size}",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = Color.White,
-                            textAlign = TextAlign.Center,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.wrapContentSize(Alignment.Center)
-                        )
+                        if (itemDisplayCategories.isEmpty()) {
+                            // Fallback for when category names don't match any known icons
+                            categoryNames.take(3).forEach { _ ->
+                                Surface(
+                                    shape = CircleShape,
+                                    color = MaterialTheme.colorScheme.tertiary,
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.MoreHoriz,
+                                        contentDescription = "Unknown category",
+                                        tint = MaterialTheme.colorScheme.onTertiary,
+                                        modifier = Modifier
+                                            .padding(4.dp)
+                                            .size(16.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(4.dp))
+                            }
+                            
+                            if (categoryNames.size > 3) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = MaterialTheme.colorScheme.tertiary,
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Text(
+                                        text = "+${categoryNames.size - 3}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onTertiary,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.fillMaxSize().wrapContentSize(Alignment.Center)
+                                    )
+                                }
+                            }
+                        } else {
+                            itemDisplayCategories.take(3).forEach { category ->
+                                Surface(
+                                    shape = CircleShape,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = category.icon,
+                                        contentDescription = category.name,
+                                        tint = MaterialTheme.colorScheme.onPrimary,
+                                        modifier = Modifier
+                                            .padding(4.dp)
+                                            .size(16.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(4.dp))
+                            }
+                            
+                            if (categoryNames.size > 3) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Text(
+                                        text = "+${categoryNames.size - 3}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onPrimary,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.fillMaxSize().wrapContentSize(Alignment.Center)
+                                    )
+                                }
+                            }
+                        }
                     }
-                    Spacer(modifier = Modifier.width(8.dp))
                 }
                 
                 Checkbox(
