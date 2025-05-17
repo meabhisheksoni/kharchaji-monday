@@ -243,12 +243,23 @@ fun MainScreen(todoViewModel: TodoViewModel, onShareClick: () -> Unit) {
 
 // Function to parse item text and extract category information
 fun parseCategoryInfo(itemText: String): Pair<String, List<String>> {
+    // Add debug logging
+    Log.d("CategoryDebug", "Parsing categories from: $itemText")
+    
     return if (itemText.contains("|CATS:")) {
-        val parts = itemText.split("|CATS:")
-        val displayText = parts[0]
-        val categoryNames = parts[1].split(",")
-        displayText to categoryNames
+        try {
+            val parts = itemText.split("|CATS:")
+            val displayText = parts[0]
+            val categoryNames = parts[1].split(",").map { it.trim() }
+            
+            Log.d("CategoryDebug", "Found categories: $categoryNames")
+            displayText to categoryNames
+        } catch (e: Exception) {
+            Log.e("CategoryDebug", "Error parsing categories: ${e.message}")
+            itemText to emptyList()
+        }
     } else {
+        Log.d("CategoryDebug", "No categories found in item text")
         itemText to emptyList()
     }
 }
@@ -303,11 +314,17 @@ fun TodoItemRow(
             ExpenseCategory("Other", Icons.Outlined.MoreHoriz)
         )
     }
+    
     val itemDisplayCategories = remember(categoryNames) {
-        allCategories.filter { category -> 
+        val matched = allCategories.filter { category -> 
             categoryNames.any { it.trim() == category.name }
         }
+        Log.d("CategoryDebug", "Matched categories: ${matched.map { it.name }}")
+        matched
     }
+
+    // Force update with a key based on the item text
+    val forceUpdate = remember(item.text) { true }
 
     Column { // Main column for the entire item row
         Card(
@@ -323,6 +340,25 @@ fun TodoItemRow(
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // CATEGORY INDICATOR - VERY VISIBLE
+                if (categoryNames.isNotEmpty()) {
+                    Surface(
+                        modifier = Modifier.size(32.dp),
+                        shape = CircleShape,
+                        color = Color.Red
+                    ) {
+                        Text(
+                            text = "${categoryNames.size}",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color.White,
+                            textAlign = TextAlign.Center,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.wrapContentSize(Alignment.Center)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+                
                 Checkbox(
                     checked = item.isDone,
                     onCheckedChange = onCheckedChange,
@@ -348,41 +384,62 @@ fun TodoItemRow(
                             modifier = Modifier.weight(1f)
                         )
                         
+                        // Extra debug note
+                        if (categoryNames.isNotEmpty() && itemDisplayCategories.isEmpty()) {
+                            Text(
+                                text = " (!${categoryNames.size})", 
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                        
                         if (itemDisplayCategories.isNotEmpty()) {
                             Spacer(modifier = Modifier.width(8.dp))
                             
-                            // Category icons in a horizontal row
-                            itemDisplayCategories.take(3).forEach { category ->
-                                Surface(
-                                    shape = CircleShape,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
+                            // EXTRA VISIBLE BOX for debugging
+                            Surface(
+                                color = MaterialTheme.colorScheme.errorContainer,
+                                shape = RoundedCornerShape(4.dp),
+                                modifier = Modifier.padding(end = 8.dp)
+                            ) {
+                                // Category icons in a horizontal row with larger size 
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    modifier = Modifier.padding(4.dp)
                                 ) {
-                                    Icon(
-                                        imageVector = category.icon,
-                                        contentDescription = category.name,
-                                        tint = MaterialTheme.colorScheme.onPrimary,
-                                        modifier = Modifier
-                                            .padding(3.dp)
-                                            .size(14.dp)
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(4.dp))
-                            }
-                            
-                            if (itemDisplayCategories.size > 3) {
-                                Surface(
-                                    shape = CircleShape,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
-                                ) {
-                                    Text(
-                                        text = "+${itemDisplayCategories.size - 3}",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onPrimary,
-                                        textAlign = TextAlign.Center,
-                                        modifier = Modifier.fillMaxSize().wrapContentSize(Alignment.Center)
-                                    )
+                                    itemDisplayCategories.take(3).forEach { category ->
+                                        Surface(
+                                            shape = CircleShape,
+                                            color = MaterialTheme.colorScheme.error,
+                                            modifier = Modifier.size(24.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = category.icon,
+                                                contentDescription = category.name,
+                                                tint = MaterialTheme.colorScheme.onError,
+                                                modifier = Modifier
+                                                    .padding(4.dp)
+                                                    .size(16.dp)
+                                            )
+                                        }
+                                    }
+                                    
+                                    if (itemDisplayCategories.size > 3) {
+                                        Surface(
+                                            shape = CircleShape,
+                                            color = MaterialTheme.colorScheme.error,
+                                            modifier = Modifier.size(24.dp)
+                                        ) {
+                                            Text(
+                                                text = "+${itemDisplayCategories.size - 3}",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onError,
+                                                textAlign = TextAlign.Center,
+                                                modifier = Modifier.fillMaxSize().wrapContentSize(Alignment.Center)
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -499,6 +556,7 @@ fun EntryFormScreen(onNextClick: () -> Unit, todoViewModel: TodoViewModel) {
             
             // Create a comma-separated list of category names for encoding (will be hidden)
             val categoryCodes = if (selectedCategories.isNotEmpty()) {
+                // Add specific separator to ensure we can parse it later
                 "|CATS:" + selectedCategories.joinToString(",") { it.name }
             } else {
                 ""
@@ -508,8 +566,13 @@ fun EntryFormScreen(onNextClick: () -> Unit, todoViewModel: TodoViewModel) {
             Log.d("CategoryDebug", "Adding item with categories: $categoryCodes")
             Log.d("CategoryDebug", "Complete item text: ${itemText + categoryCodes}")
             
+            // Verify the category info parsing works correctly as a double-check
+            val fullText = itemText + categoryCodes
+            val (parsedBase, parsedCats) = parseCategoryInfo(fullText)
+            Log.d("CategoryDebug", "Verifying parsing - Base: $parsedBase, Categories: $parsedCats")
+            
             // Add the item with category metadata
-            todoViewModel.addItem(TodoItem(text = itemText + categoryCodes))
+            todoViewModel.addItem(TodoItem(text = fullText))
             
             newItemText = ""
             itemPrice = ""
