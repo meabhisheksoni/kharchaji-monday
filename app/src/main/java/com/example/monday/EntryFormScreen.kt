@@ -270,295 +270,172 @@ fun TodoItemRow(
     onCheckedChange: (Boolean) -> Unit,
     onRemoveClick: () -> Unit
 ) {
-    // 1. Separate category data from the main display text
-    val (baseDisplayText, categoryNames) = parseCategoryInfo(item.text)
+    // Parse the item text to extract category information
+    val (baseText, categoryNames) = parseCategoryInfo(item.text)
     
-    // Debug logging
-    Log.d("CategoryDebug", "Raw item text: ${item.text}")
-    Log.d("CategoryDebug", "Category names extracted: $categoryNames")
+    // Log what we're working with
+    Log.d("CategoryDebug", "Item text: ${item.text}")
+    Log.d("CategoryDebug", "Found categories: $categoryNames")
     
-    // 2. Implement robust local parsing instead of relying on Utils.parseItemText
-    // Split by price separator to isolate name/quantity part from price part
-    val priceSeparator = " - ₹"
-    val textParts = baseDisplayText.split(priceSeparator, limit = 2)
+    // Extract name, quantity, and price
+    val parts = baseText.split(" - ₹")
+    val nameWithQuantity = parts[0].trim()
+    val price = parts.getOrElse(1) { "0" }.trim()
     
-    // Extract name and quantity part
-    val nameAndQuantityText = textParts.getOrElse(0) { baseDisplayText }.trim()
-    
-    // Extract and clean price to ensure no category data remains
-    var extractedPrice = textParts.getOrElse(1) { "" }.trim()
-    extractedPrice = extractedPrice.takeWhile { it.isDigit() || it == '.' }
-    if (extractedPrice.isEmpty() || extractedPrice == ".") extractedPrice = "0"
-
-    // Extract quantity if present (inside parentheses)
+    // Parse name and quantity
     val quantityRegex = Regex("""\((.*?)\)""")
-    val quantityMatch = quantityRegex.find(nameAndQuantityText)
-    
-    val extractedName = quantityMatch?.let {
-        nameAndQuantityText.substring(0, it.range.first).trim()
-    } ?: nameAndQuantityText
-    
-    val extractedQuantity = quantityMatch?.groupValues?.getOrNull(1)?.trim()
+    val quantityMatch = quantityRegex.find(nameWithQuantity)
+    val name = if (quantityMatch != null) {
+        nameWithQuantity.substring(0, quantityMatch.range.first).trim()
+    } else {
+        nameWithQuantity
+    }
+    val quantity = quantityMatch?.groupValues?.get(1)
 
-    // 3. Prepare category icons for display.
-    val allCategories = remember {
-        listOf(
-            ExpenseCategory("Groceries", Icons.Outlined.ShoppingCart),
-            ExpenseCategory("Food", Icons.Outlined.Restaurant),
-            ExpenseCategory("Transport", Icons.Outlined.DirectionsCar),
-            ExpenseCategory("Bills", Icons.Outlined.Receipt),
-            ExpenseCategory("Shopping", Icons.Outlined.LocalMall),
-            ExpenseCategory("Health", Icons.Outlined.Medication),
-            ExpenseCategory("Education", Icons.Outlined.School),
-            ExpenseCategory("Entertainment", Icons.Outlined.Movie),
-            ExpenseCategory("Other", Icons.Outlined.MoreHoriz)
+    // Define all possible expense categories
+    val allCategories = listOf(
+        ExpenseCategory("Groceries", Icons.Outlined.ShoppingCart),
+        ExpenseCategory("Food", Icons.Outlined.Restaurant),
+        ExpenseCategory("Transport", Icons.Outlined.DirectionsCar),
+        ExpenseCategory("Bills", Icons.Outlined.Receipt),
+        ExpenseCategory("Shopping", Icons.Outlined.LocalMall),
+        ExpenseCategory("Health", Icons.Outlined.Medication),
+        ExpenseCategory("Education", Icons.Outlined.School),
+        ExpenseCategory("Entertainment", Icons.Outlined.Movie),
+        ExpenseCategory("Other", Icons.Outlined.MoreHoriz)
+    )
+    
+    // Match category names to their icons
+    val matchedCategories = allCategories.filter { category ->
+        categoryNames.any { it.trim() == category.name }
+    }
+    
+    // UI for the expense item
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
         )
-    }
-    
-    val itemDisplayCategories = remember(categoryNames) {
-        val matched = allCategories.filter { category -> 
-            categoryNames.any { it.trim() == category.name }
-        }
-        Log.d("CategoryDebug", "Matched categories: ${matched.map { it.name }}")
-        matched
-    }
-
-    // Force update with a key based on the item text
-    val forceUpdate = remember(item.text) { true }
-
-    Column { // Main column for the entire item row
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-        ) {
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // Category row - always visible even if empty to help debug
+            Surface(
+                color = if (categoryNames.isEmpty()) 
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                else 
+                    MaterialTheme.colorScheme.primaryContainer,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    if (categoryNames.isEmpty()) {
+                        Text(
+                            text = "No categories",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        // Show matched category icons
+                        matchedCategories.take(3).forEach { category ->
+                            Icon(
+                                imageVector = category.icon,
+                                contentDescription = category.name,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        
+                        // Show category names if no icons matched
+                        if (matchedCategories.isEmpty() && categoryNames.isNotEmpty()) {
+                            categoryNames.take(3).forEach { catName ->
+                                Text(
+                                    text = catName,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(end = 4.dp)
+                                )
+                            }
+                        }
+                        
+                        // Show count for additional categories
+                        if (categoryNames.size > 3) {
+                            Text(
+                                text = "+${categoryNames.size - 3} more",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
+            }
+            
+            // Expense details row
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Replace red indicator with actual category icons
-                if (categoryNames.isNotEmpty()) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(end = 8.dp)
-                    ) {
-                        if (itemDisplayCategories.isEmpty()) {
-                            // Fallback for when category names don't match any known icons
-                            categoryNames.take(3).forEach { _ ->
-                                Surface(
-                                    shape = CircleShape,
-                                    color = MaterialTheme.colorScheme.tertiary,
-                                    modifier = Modifier.size(24.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.MoreHoriz,
-                                        contentDescription = "Unknown category",
-                                        tint = MaterialTheme.colorScheme.onTertiary,
-                                        modifier = Modifier
-                                            .padding(4.dp)
-                                            .size(16.dp)
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(4.dp))
-                            }
-                            
-                            if (categoryNames.size > 3) {
-                                Surface(
-                                    shape = CircleShape,
-                                    color = MaterialTheme.colorScheme.tertiary,
-                                    modifier = Modifier.size(24.dp)
-                                ) {
-                                    Text(
-                                        text = "+${categoryNames.size - 3}",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onTertiary,
-                                        textAlign = TextAlign.Center,
-                                        modifier = Modifier.fillMaxSize().wrapContentSize(Alignment.Center)
-                                    )
-                                }
-                            }
-                        } else {
-                            itemDisplayCategories.take(3).forEach { category ->
-                                Surface(
-                                    shape = CircleShape,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(24.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = category.icon,
-                                        contentDescription = category.name,
-                                        tint = MaterialTheme.colorScheme.onPrimary,
-                                        modifier = Modifier
-                                            .padding(4.dp)
-                                            .size(16.dp)
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(4.dp))
-                            }
-                            
-                            if (categoryNames.size > 3) {
-                                Surface(
-                                    shape = CircleShape,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(24.dp)
-                                ) {
-                                    Text(
-                                        text = "+${categoryNames.size - 3}",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onPrimary,
-                                        textAlign = TextAlign.Center,
-                                        modifier = Modifier.fillMaxSize().wrapContentSize(Alignment.Center)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-                
+                // Checkbox
                 Checkbox(
                     checked = item.isDone,
                     onCheckedChange = onCheckedChange,
                     colors = CheckboxDefaults.colors(
                         checkedColor = MaterialTheme.colorScheme.primary,
                         uncheckedColor = MaterialTheme.colorScheme.outline
-                    ),
-                    modifier = Modifier.padding(end = 8.dp) // Space after checkbox
+                    )
                 )
-
-                Column(modifier = Modifier.weight(1f)) { // Column for Icons, Name, Quantity
-                    // Item Name with Category Icons inline
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
+                
+                // Item details (name and quantity)
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 8.dp)
+                ) {
+                    Text(
+                        text = name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    
+                    if (!quantity.isNullOrBlank()) {
                         Text(
-                            text = extractedName,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f)
-                        )
-                        
-                        // Extra debug note
-                        if (categoryNames.isNotEmpty() && itemDisplayCategories.isEmpty()) {
-                            Text(
-                                text = " (!${categoryNames.size})", 
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                        }
-                        
-                        if (itemDisplayCategories.isNotEmpty()) {
-                            Spacer(modifier = Modifier.width(8.dp))
-                            
-                            // EXTRA VISIBLE BOX for debugging
-                            Surface(
-                                color = MaterialTheme.colorScheme.errorContainer,
-                                shape = RoundedCornerShape(4.dp),
-                                modifier = Modifier.padding(end = 8.dp)
-                            ) {
-                                // Category icons in a horizontal row with larger size 
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                    modifier = Modifier.padding(4.dp)
-                                ) {
-                                    itemDisplayCategories.take(3).forEach { category ->
-                                        Surface(
-                                            shape = CircleShape,
-                                            color = MaterialTheme.colorScheme.error,
-                                            modifier = Modifier.size(24.dp)
-                                        ) {
-                                            Icon(
-                                                imageVector = category.icon,
-                                                contentDescription = category.name,
-                                                tint = MaterialTheme.colorScheme.onError,
-                                                modifier = Modifier
-                                                    .padding(4.dp)
-                                                    .size(16.dp)
-                                            )
-                                        }
-                                    }
-                                    
-                                    if (itemDisplayCategories.size > 3) {
-                                        Surface(
-                                            shape = CircleShape,
-                                            color = MaterialTheme.colorScheme.error,
-                                            modifier = Modifier.size(24.dp)
-                                        ) {
-                                            Text(
-                                                text = "+${itemDisplayCategories.size - 3}",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.onError,
-                                                textAlign = TextAlign.Center,
-                                                modifier = Modifier.fillMaxSize().wrapContentSize(Alignment.Center)
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // Quantity (if present)
-                    if (extractedQuantity != null && extractedQuantity.isNotBlank()) {
-                        Text(
-                            text = extractedQuantity,
+                            text = quantity,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
-
-                // Price (aligned to the right of the name/quantity column)
+                
+                // Price
                 Text(
-                    text = "₹${extractedPrice}", // Use our properly cleaned price
+                    text = "₹$price",
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    textAlign = TextAlign.End,
-                    modifier = Modifier.padding(start = 8.dp) // Space before price
+                    color = MaterialTheme.colorScheme.primary
                 )
-
-                // Delete Button
-                IconButton(
-                    onClick = onRemoveClick,
-                    modifier = Modifier.size(36.dp)
-                ) {
+                
+                // Delete button
+                IconButton(onClick = onRemoveClick) {
                     Icon(
                         Icons.Default.Delete,
-                        contentDescription = "Delete item",
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
-        }
-        // Optional Separator line - can be removed if it clutters the UI
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 32.dp, vertical = 8.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                repeat(45) {
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(1.dp)
-                            .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+                        contentDescription = "Delete",
+                        tint = MaterialTheme.colorScheme.error
                     )
                 }
             }
         }
     }
+    
+    // Add spacing between items
+    Spacer(modifier = Modifier.height(8.dp))
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
