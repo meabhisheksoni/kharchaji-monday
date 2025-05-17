@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -260,7 +261,11 @@ fun TodoItemRow(
 ) {
     // 1. Separate category data from the main display text
     val (baseDisplayText, categoryNames) = parseCategoryInfo(item.text)
-
+    
+    // Debug logging
+    Log.d("CategoryDebug", "Raw item text: ${item.text}")
+    Log.d("CategoryDebug", "Category names extracted: $categoryNames")
+    
     // 2. Implement robust local parsing instead of relying on Utils.parseItemText
     // Split by price separator to isolate name/quantity part from price part
     val priceSeparator = " - ₹"
@@ -329,62 +334,59 @@ fun TodoItemRow(
                 )
 
                 Column(modifier = Modifier.weight(1f)) { // Column for Icons, Name, Quantity
-                    // Row for Category Icons (ABOVE the name/quantity)
-                    if (itemDisplayCategories.isNotEmpty()) {
-                        Row(
-                            modifier = Modifier
-                                .padding(bottom = 2.dp), // Space between icons and item name
-                            horizontalArrangement = Arrangement.Start
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .offset(y = 0.dp, x = 0.dp)
-                                    .border(
-                                        width = 0.5.dp,
-                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                                        shape = RoundedCornerShape(4.dp)
-                                    )
-                                    .background(
-                                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
-                                        shape = RoundedCornerShape(4.dp)
-                                    )
-                                    .padding(horizontal = 2.dp, vertical = 1.dp)
-                            ) {
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(1.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                    // Item Name with Category Icons inline
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = extractedName,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
+                        
+                        if (itemDisplayCategories.isNotEmpty()) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            
+                            // Category icons in a horizontal row
+                            itemDisplayCategories.take(3).forEach { category ->
+                                Surface(
+                                    shape = CircleShape,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
                                 ) {
-                                    itemDisplayCategories.take(3).forEach { category ->
-                                        Icon(
-                                            imageVector = category.icon,
-                                            contentDescription = category.name,
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(10.dp)
-                                        )
-                                    }
-                                    
-                                    if (itemDisplayCategories.size > 3) {
-                                        Text(
-                                            text = "+${itemDisplayCategories.size - 3}",
-                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 7.sp),
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
+                                    Icon(
+                                        imageVector = category.icon,
+                                        contentDescription = category.name,
+                                        tint = MaterialTheme.colorScheme.onPrimary,
+                                        modifier = Modifier
+                                            .padding(3.dp)
+                                            .size(14.dp)
+                                    )
                                 }
+                                Spacer(modifier = Modifier.width(4.dp))
                             }
                             
-                            Spacer(modifier = Modifier.width(4.dp))
+                            if (itemDisplayCategories.size > 3) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                ) {
+                                    Text(
+                                        text = "+${itemDisplayCategories.size - 3}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onPrimary,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.fillMaxSize().wrapContentSize(Alignment.Center)
+                                    )
+                                }
+                            }
                         }
                     }
-
-                    // Item Name
-                    Text(
-                        text = extractedName,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
 
                     // Quantity (if present)
                     if (extractedQuantity != null && extractedQuantity.isNotBlank()) {
@@ -501,6 +503,10 @@ fun EntryFormScreen(onNextClick: () -> Unit, todoViewModel: TodoViewModel) {
             } else {
                 ""
             }
+            
+            // Debug log
+            Log.d("CategoryDebug", "Adding item with categories: $categoryCodes")
+            Log.d("CategoryDebug", "Complete item text: ${itemText + categoryCodes}")
             
             // Add the item with category metadata
             todoViewModel.addItem(TodoItem(text = itemText + categoryCodes))
@@ -645,43 +651,42 @@ fun EntryFormScreen(onNextClick: () -> Unit, todoViewModel: TodoViewModel) {
                     ) {
                         Text("Item name", style = MaterialTheme.typography.titleMedium)
                         
-                        // Display category icons in superscript
+                        // Display category icons in a more visible way
                         if (selectedCategories.isNotEmpty()) {
-                            Box(
-                                modifier = Modifier
-                                    .offset(y = (-6).dp, x = (2).dp)
-                                    .border(
-                                        width = 0.5.dp,
-                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                                        shape = RoundedCornerShape(6.dp)
-                                    )
-                                    .background(
-                                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
-                                        shape = RoundedCornerShape(6.dp)
-                                    )
-                                    .padding(horizontal = 3.dp, vertical = 1.dp)
-                                    .clickable { showCategoryDialog = true }
-                            ) {
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(2.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                            Spacer(modifier = Modifier.width(8.dp))
+                            
+                            // Category icons in a horizontal row
+                            selectedCategories.take(3).forEach { category ->
+                                Surface(
+                                    shape = CircleShape,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
                                 ) {
-                                    selectedCategories.take(3).forEach { category ->
-                                        Icon(
-                                            imageVector = category.icon,
-                                            contentDescription = category.name,
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(12.dp)
-                                        )
-                                    }
-                                    
-                                    if (selectedCategories.size > 3) {
-                                        Text(
-                                            text = "+${selectedCategories.size - 3}",
-                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
+                                    Icon(
+                                        imageVector = category.icon,
+                                        contentDescription = category.name,
+                                        tint = MaterialTheme.colorScheme.onPrimary,
+                                        modifier = Modifier
+                                            .padding(3.dp)
+                                            .size(12.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(2.dp))
+                            }
+                            
+                            if (selectedCategories.size > 3) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                ) {
+                                    Text(
+                                        text = "+${selectedCategories.size - 3}",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
+                                        color = MaterialTheme.colorScheme.onPrimary,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.fillMaxSize().wrapContentSize(Alignment.Center)
+                                    )
                                 }
                             }
                         }
